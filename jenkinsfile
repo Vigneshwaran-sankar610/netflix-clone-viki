@@ -1,0 +1,77 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = "your-dockerhub-username/netflix-clone"
+        CONTAINER_NAME = "netflix-clone"
+        EC2_HOST = "your-ec2-public-ip"
+        EC2_USER = "ubuntu"
+    }
+
+    stages {
+
+        stage('📥 Clone Repository') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Vigneshwaran-sankar610/netflix-clone-viki.git'
+            }
+        }
+
+        stage('🐳 Build Docker Image') {
+            steps {
+                sh "docker build -t ${DOCKER_IMAGE}:latest ."
+                sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+            }
+        }
+
+        stage('🔍 Test Container') {
+            steps {
+                sh "docker run -d --name test-netflix -p 8091:80 ${DOCKER_IMAGE}:latest"
+                sh "sleep 5"
+                sh "curl -f http://localhost:8091 || exit 1"
+                sh "docker stop test-netflix && docker rm test-netflix"
+                echo '✅ Test passed!'
+            }
+        }
+
+        stage('📤 Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
+                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                }
+            }
+        }
+
+        stage('🚀 Deploy to EC2') {
+            steps {
+                sshagent(['ec2-ssh-key']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
+                            docker pull ${DOCKER_IMAGE}:latest
+                            docker stop ${CONTAINER_NAME} || true
+                            docker rm ${CONTAINER_NAME} || true
+                            docker run -d \\
+                                --name ${CONTAINER_NAME} \\
+                                -p 80:80 \\
+                                --restart always \\
+                                ${DOCKER_IMAGE}:latest
+                            docker image prune -f
+                            echo "🎬 Netflix Clone is LIVE!"
+                        '
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success { echo '🎉 Netflix Clone deployed successfully!' }
+        failure { echo '❌ Pipeline failed. Check logs.' }
+        always { sh 'docker logout' }
+    }
+}
