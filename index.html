@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Netflix</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --netflix-red: #e50914;
+      --bg: #141414;
+      --text: #fff;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+    a { text-decoration: none; color: inherit; }
+
+    /* NAVBAR */
+    .navbar {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 4%;
+      background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+      transition: background 0.4s;
+    }
+    .navbar.scrolled { background: #141414; }
+    .nav-left { display: flex; align-items: center; gap: 2rem; }
+    .logo { color: var(--netflix-red); font-size: 1.9rem; font-weight: 900; letter-spacing: -1px; }
+    .nav-links { display: flex; gap: 1.2rem; list-style: none; }
+    .nav-links a { font-size: 0.85rem; color: #e5e5e5; transition: color 0.3s; }
+    .nav-links a:hover { color: #b3b3b3; }
+    .nav-right { display: flex; align-items: center; gap: 1.5rem; }
+    .search-icon, .bell-icon { font-size: 1.2rem; cursor: pointer; }
+    .avatar {
+      width: 34px; height: 34px; border-radius: 4px;
+      background: linear-gradient(135deg, #e50914, #831010);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.9rem; cursor: pointer;
+    }
+
+    /* HERO BANNER */
+    .hero {
+      position: relative; height: 85vh; min-height: 500px;
+      display: flex; align-items: flex-end;
+      padding: 0 4% 8%;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(
+        to right,
+        rgba(20,20,20,0.9) 0%,
+        rgba(20,20,20,0.5) 50%,
+        transparent 100%
+      ),
+      linear-gradient(
+        to top,
+        rgba(20,20,20,1) 0%,
+        transparent 40%
+      ),
+      url('https://image.tmdb.org/t/p/original/628Dep6AxEtDxjZoGP78TsOxYbK.jpg');
+      background-size: cover; background-position: center top;
+    }
+    .hero-content { position: relative; z-index: 2; max-width: 550px; }
+    .hero-logo-text {
+      font-size: clamp(3rem, 7vw, 5rem);
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 1.2rem;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+    }
+    .hero-logo-text span { color: var(--netflix-red); }
+    .hero-desc {
+      font-size: 1.1rem; font-weight: 400;
+      line-height: 1.6; color: #e5e5e5;
+      margin-bottom: 1.5rem;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
+    }
+    .hero-meta {
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: 1.5rem; font-size: 0.9rem;
+    }
+    .match { color: #46d369; font-weight: 700; }
+    .age-badge { border: 1px solid #ddd; padding: 0.1rem 0.4rem; font-size: 0.8rem; }
+    .hero-btns { display: flex; gap: 1rem; }
+    .btn-play {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.75rem 2rem;
+      background: #fff; color: #000;
+      border: none; border-radius: 4px;
+      font-size: 1.1rem; font-weight: 700;
+      cursor: pointer; transition: background 0.3s;
+    }
+    .btn-play:hover { background: rgba(255,255,255,0.75); }
+    .btn-info {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.75rem 2rem;
+      background: rgba(109,109,110,0.7); color: #fff;
+      border: none; border-radius: 4px;
+      font-size: 1.1rem; font-weight: 600;
+      cursor: pointer; transition: background 0.3s;
+    }
+    .btn-info:hover { background: rgba(109,109,110,0.5); }
+
+    /* ROWS */
+    .rows-container { padding: 0 4% 4rem; margin-top: -6rem; position: relative; z-index: 10; }
+    .row { margin-bottom: 2.5rem; }
+    .row-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.8rem; padding-left: 0.2rem; }
+    .row-title span { color: #46d369; font-size: 0.9rem; font-weight: 600; margin-left: 0.5rem; cursor: pointer; }
+    .row-title span:hover { color: #fff; }
+    .cards-container {
+      display: flex; gap: 0.4rem; overflow-x: auto;
+      padding-bottom: 0.5rem; scroll-behavior: smooth;
+    }
+    .cards-container::-webkit-scrollbar { height: 4px; }
+    .cards-container::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+    .movie-card {
+      flex: 0 0 calc(16.66% - 0.4rem);
+      min-width: 160px;
+      border-radius: 4px; overflow: hidden;
+      cursor: pointer; position: relative;
+      transition: transform 0.3s, z-index 0s;
+    }
+    .movie-card:hover { transform: scale(1.08); z-index: 10; }
+    .movie-card img {
+      width: 100%; aspect-ratio: 16/9;
+      object-fit: cover; display: block;
+      background: #222;
+    }
+    .movie-card-placeholder {
+      width: 100%; aspect-ratio: 16/9;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; color: #aaa; text-align: center; padding: 0.5rem;
+      font-weight: 600;
+    }
+    .card-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.3s;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 0.8rem;
+    }
+    .movie-card:hover .card-overlay { opacity: 1; }
+    .card-title { font-size: 0.78rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .card-actions { display: flex; gap: 0.4rem; }
+    .card-btn {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; cursor: pointer; border: 1.5px solid #fff;
+      background: rgba(0,0,0,0.5); transition: background 0.3s;
+    }
+    .card-btn.play { background: #fff; color: #000; border-color: #fff; }
+    .card-btn:hover { background: rgba(255,255,255,0.2); }
+
+    /* TOP 10 */
+    .top10-card {
+      flex: 0 0 calc(16.66% - 0.4rem);
+      min-width: 160px;
+      position: relative; cursor: pointer;
+    }
+    .top10-number {
+      position: absolute; left: -15px; bottom: -10px;
+      font-size: 5rem; font-weight: 900;
+      color: transparent;
+      -webkit-text-stroke: 3px #555;
+      z-index: 2; line-height: 1;
+      pointer-events: none;
+    }
+    .top10-card img, .top10-card .movie-card-placeholder {
+      border-radius: 4px; width: 100%; aspect-ratio: 2/3;
+      object-fit: cover; display: block; background: #222;
+      transition: transform 0.3s;
+    }
+    .top10-card:hover img { transform: scale(1.05); }
+
+    /* MOVIE DETAIL MODAL */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.7); align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #181818; border-radius: 8px;
+      width: 90%; max-width: 850px; max-height: 90vh;
+      overflow-y: auto; position: relative;
+    }
+    .modal-hero {
+      position: relative; height: 320px;
+      background: linear-gradient(to bottom, transparent 50%, #181818 100%);
+    }
+    .modal-hero img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px 8px 0 0; }
+    .modal-hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, transparent 40%, #181818 100%);
+      border-radius: 8px 8px 0 0;
+    }
+    .modal-close {
+      position: absolute; top: 1rem; right: 1rem;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #181818; border: none; color: #fff;
+      font-size: 1.2rem; cursor: pointer; z-index: 10;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-body { padding: 0 2rem 2rem; }
+    .modal-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 1rem; }
+    .modal-meta { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; font-size: 0.9rem; }
+    .modal-desc { color: #d2d2d2; line-height: 1.7; margin-bottom: 1.5rem; }
+    .modal-btns { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+    .modal-info { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.85rem; }
+    .modal-info span { color: #777; }
+    .modal-info strong { color: #fff; }
+
+    /* FOOTER */
+    footer { padding: 3rem 4%; color: #737373; font-size: 0.85rem; }
+    footer a { color: #737373; margin-right: 1.5rem; display: inline-block; margin-bottom: 0.5rem; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .movie-card { flex: 0 0 calc(33.33% - 0.4rem); }
+      .hero-logo-text { font-size: 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+  <div class="nav-left">
+    <a href="index.html" class="logo">NETFLIX</a>
+    <ul class="nav-links">
+      <li><a href="#">Home</a></li>
+      <li><a href="#">TV Shows</a></li>
+      <li><a href="#">Movies</a></li>
+      <li><a href="#">New & Popular</a></li>
+      <li><a href="#">My List</a></li>
+      <li><a href="#">Browse by Language</a></li>
+    </ul>
+  </div>
+  <div class="nav-right">
+    <span class="search-icon">🔍</span>
+    <span class="bell-icon">🔔</span>
+    <div class="avatar">V</div>
+  </div>
+</nav>
+
+<!-- HERO BANNER -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-logo-text">STRANGER<br/><span>THINGS</span></div>
+    <p class="hero-desc">When a boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces and one strange little girl.</p>
+    <div class="hero-meta">
+      <span class="match">97% Match</span>
+      <span>2016</span>
+      <span class="age-badge">U/A 16+</span>
+      <span>4 Seasons</span>
+    </div>
+    <div class="hero-btns">
+      <button class="btn-play" onclick="openModal('stranger')">▶ Play</button>
+      <button class="btn-info" onclick="openModal('stranger')">ℹ More Info</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOVIE ROWS -->
+<div class="rows-container">
+
+  <!-- Trending Now -->
+  <div class="row">
+    <div class="row-title">Trending Now <span>Explore All &rsaquo;</span></div>
+    <div class="cards-container">
+      <div class="movie-card" onclick="openModal('wednesday')">
+        <div class="movie-card-placeholder" style="background:linear-gradient(135deg,#1a1a2e,#16213e)">🎭 Wednesday</div>
+        <div class="card-overlay"><div class="card-title">Wednesday</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span><span class="card-btn">👍</span></div></div>
+      </div>
+      <div class="movie-card" onclick="openModal('squid')">
+        <div class="movie-card-placeholder" style="background:linear-gradient(135deg,#2d1b69,#11998e)">🦑 Squid Game</div>
+        <div class="card-overlay"><div class="card-title">Squid Game</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span><span class="card-btn">👍</span></div></div>
+      </div>
+      <div class="movie-card" onclick="openModal('stranger')">
+        <div class="movie-card-placeholder" style="background:linear-gradient(135deg,#0f2027,#203a43,#2c5364)">👦 Stranger Things</div>
+        <div class="card-overlay"><div class="card-title">Stranger Things</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span><span class="card-btn">👍</span></div></div>
+      </div>
+      <div class="movie-card">
+        <div class="movie-card-placeholder" style="background:linear-gradient(135deg,#1a1a1a,#434343)">💰 Money Heist</div>
+        <div class="card-overlay"><div class="card-title">Money Heist</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span><span class="card-btn">👍</span></div></div>
+      </div>
+      <div class="movie-card">
+        <div class="movie-card-placeholder" style="background:linear-gradient(135deg,#360033,#0b8793)">👑 The Crown</div>
+        <div class="card-overlay"><div class="card-title">The Crown</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span><span class="card-btn">👍</span></div></div>
+      </div>
+      <div class="movie-card">
+        <div class="movie-card-placeholder" style="background:linear-gradient(135deg,#134e5e,#71b280)">🌊 Ozark</div>
+        <div class="card-overlay"><div class="card-title">Ozark</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span><span class="card-btn">👍</span></div></div>
+      </div>
+      <div class="movie-card">
+        <div class="movie-card-placeholder" style="background:linear-gradient(135deg,#232526,#414345)">🍕 The Bear</div>
+        <div class="card-overlay"><div class="card-title">The Bear</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div>
+      </div>
+      <div class="movie-card">
+        <div class="movie-card-placeholder" style="background:linear-gradient(135deg,#4b1248,#f10711)">🎪 Circus of Blood</div>
+        <div class="card-overlay"><div class="card-title">Circus of Blood</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top 10 in India -->
+  <div class="row">
+    <div class="row-title">Top 10 in India Today</div>
+    <div class="cards-container">
+      <div class="top10-card"><span class="top10-number">1</span><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#2d1b69,#11998e);aspect-ratio:2/3;border-radius:4px">🦑<br/>Squid Game S2</div></div>
+      <div class="top10-card"><span class="top10-number">2</span><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#1a1a2e,#16213e);aspect-ratio:2/3;border-radius:4px">🎭<br/>Wednesday</div></div>
+      <div class="top10-card"><span class="top10-number">3</span><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#134e5e,#71b280);aspect-ratio:2/3;border-radius:4px">⚔️<br/>The Witcher</div></div>
+      <div class="top10-card"><span class="top10-number">4</span><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#360033,#0b8793);aspect-ratio:2/3;border-radius:4px">🔥<br/>Lucifer</div></div>
+      <div class="top10-card"><span class="top10-number">5</span><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#232526,#414345);aspect-ratio:2/3;border-radius:4px">🕵️<br/>Dark</div></div>
+      <div class="top10-card"><span class="top10-number">6</span><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#0f2027,#2c5364);aspect-ratio:2/3;border-radius:4px">🌌<br/>Altered Carbon</div></div>
+    </div>
+  </div>
+
+  <!-- Continue Watching -->
+  <div class="row">
+    <div class="row-title">Continue Watching for Vigneshwaran</div>
+    <div class="cards-container">
+      <div class="movie-card">
+        <div class="movie-card-placeholder" style="background:linear-gradient(135deg,#0f2027,#203a43,#2c5364)">👦 Stranger Things<br/><small style="color:#aaa">S4 E3 · 42m left</small></div>
+        <div class="card-overlay"><div class="card-title">Stranger Things</div><div class="card-actions"><span class="card-btn play">▶</span></div></div>
+      </div>
+      <div class="movie-card">
+        <div class="movie-card-placeholder" style="background:linear-gradient(135deg,#1a1a1a,#434343)">💰 Money Heist<br/><small style="color:#aaa">S5 E7 · 1h left</small></div>
+        <div class="card-overlay"><div class="card-title">Money Heist</div><div class="card-actions"><span class="card-btn play">▶</span></div></div>
+      </div>
+      <div class="movie-card">
+        <div class="movie-card-placeholder" style="background:linear-gradient(135deg,#360033,#0b8793)">🔥 Lucifer<br/><small style="color:#aaa">S3 E12 · 25m left</small></div>
+        <div class="card-overlay"><div class="card-title">Lucifer</div><div class="card-actions"><span class="card-btn play">▶</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tamil Movies -->
+  <div class="row">
+    <div class="row-title">Tamil Movies & Shows 🎬</div>
+    <div class="cards-container">
+      <div class="movie-card"><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#c94b4b,#4b134f)">🦁 Leo</div><div class="card-overlay"><div class="card-title">Leo</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div></div>
+      <div class="movie-card"><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#134e5e,#71b280)">🐯 Jailer</div><div class="card-overlay"><div class="card-title">Jailer</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div></div>
+      <div class="movie-card"><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#232526,#ff6b35)">🔱 PS2</div><div class="card-overlay"><div class="card-title">Ponniyin Selvan 2</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div></div>
+      <div class="movie-card"><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#1a1a2e,#e94560)">⚡ Vikram</div><div class="card-overlay"><div class="card-title">Vikram</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div></div>
+      <div class="movie-card"><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#0f3460,#533483)">🌟 Varisu</div><div class="card-overlay"><div class="card-title">Varisu</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div></div>
+      <div class="movie-card"><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#4b1248,#f10711)">👊 Beast</div><div class="card-overlay"><div class="card-title">Beast</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div></div>
+    </div>
+  </div>
+
+  <!-- Action Thrillers -->
+  <div class="row">
+    <div class="row-title">Action & Adventure</div>
+    <div class="cards-container">
+      <div class="movie-card"><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#093028,#237a57)">🕷️ Spider-Man</div><div class="card-overlay"><div class="card-title">Spider-Man NWH</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div></div>
+      <div class="movie-card"><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#1a1a2e,#16213e)">🦸 Avengers</div><div class="card-overlay"><div class="card-title">Avengers: Endgame</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div></div>
+      <div class="movie-card"><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#0f2027,#2c5364)">🤖 Extraction</div><div class="card-overlay"><div class="card-title">Extraction</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div></div>
+      <div class="movie-card"><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#360033,#0b8793)">🎯 Red Notice</div><div class="card-overlay"><div class="card-title">Red Notice</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div></div>
+      <div class="movie-card"><div class="movie-card-placeholder" style="background:linear-gradient(135deg,#232526,#ff6b35)">💥 The Gray Man</div><div class="card-overlay"><div class="card-title">The Gray Man</div><div class="card-actions"><span class="card-btn play">▶</span><span class="card-btn">+</span></div></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MOVIE DETAIL MODAL -->
+<div class="modal-overlay" id="movieModal" onclick="closeModal(event)">
+  <div class="modal" id="modalContent">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-hero">
+      <div id="modalBg" style="width:100%;height:100%;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);border-radius:8px 8px 0 0;"></div>
+      <div class="modal-hero-overlay"></div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-btns">
+        <button class="btn-play" style="font-size:0.9rem;padding:0.6rem 1.5rem">▶ Play</button>
+        <button class="btn-info" style="font-size:0.9rem;padding:0.6rem 1.5rem">+ My List</button>
+        <button class="btn-info" style="font-size:0.9rem;padding:0.6rem 1.5rem">👍</button>
+      </div>
+      <h2 class="modal-title" id="modalTitle">Stranger Things</h2>
+      <div class="modal-meta">
+        <span class="match" id="modalMatch">97% Match</span>
+        <span id="modalYear">2016</span>
+        <span class="age-badge" id="modalAge">U/A 16+</span>
+        <span id="modalSeasons">4 Seasons</span>
+      </div>
+      <p class="modal-desc" id="modalDesc">When a boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces and one strange little girl.</p>
+      <div class="modal-info">
+        <div><span>Cast: </span><strong id="modalCast">Winona Ryder, David Harbour</strong></div>
+        <div><span>Genres: </span><strong id="modalGenre">Sci-Fi, Horror, Drama</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p style="margin-bottom:1rem">Questions? Call 000-800-919-1743</p>
+  <div>
+    <a href="#">FAQ</a><a href="#">Help Centre</a><a href="#">Account</a>
+    <a href="#">Media Centre</a><a href="#">Investor Relations</a><a href="#">Jobs</a>
+    <a href="#">Ways to Watch</a><a href="#">Terms of Use</a><a href="#">Privacy</a>
+    <a href="#">Cookie Preferences</a><a href="#">Corporate Information</a>
+    <a href="#">Contact Us</a><a href="#">Speed Test</a><a href="#">Legal Notices</a>
+  </div>
+  <p style="margin-top:1.5rem">Netflix India • Built by Vigneshwaran S 🚀</p>
+</footer>
+
+<script>
+  // Navbar scroll effect
+  window.addEventListener('scroll', () => {
+    const navbar = document.getElementById('navbar');
+    navbar.classList.toggle('scrolled', window.scrollY > 50);
+  });
+
+  // Movie data
+  const movies = {
+    stranger: {
+      title: 'Stranger Things', match: '97%', year: '2016', age: 'U/A 16+',
+      seasons: '4 Seasons',
+      desc: "When a boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces and one strange little girl.",
+      cast: 'Winona Ryder, David Harbour, Millie Bobby Brown',
+      genre: 'Sci-Fi, Horror, Drama',
+      bg: 'linear-gradient(135deg,#0f2027,#203a43,#2c5364)'
+    },
+    wednesday: {
+      title: 'Wednesday', match: '94%', year: '2022', age: 'U/A 13+',
+      seasons: '1 Season',
+      desc: "Wednesday Addams investigates a murder spree while making new friends at Nevermore Academy.",
+      cast: 'Jenna Ortega, Gwendoline Christie',
+      genre: 'Comedy, Horror, Mystery',
+      bg: 'linear-gradient(135deg,#1a1a2e,#16213e)'
+    },
+    squid: {
+      title: 'Squid Game', match: '99%', year: '2021', age: 'A',
+      seasons: '2 Seasons',
+      desc: "Hundreds of cash-strapped players accept a strange invitation to compete in children's games. Inside: a tempting prize awaits with deadly high stakes.",
+      cast: 'Lee Jung-jae, Park Hae-soo',
+      genre: 'Thriller, Drama, Korean',
+      bg: 'linear-gradient(135deg,#2d1b69,#11998e)'
+    }
+  };
+
+  function openModal(id) {
+    const m = movies[id] || movies.stranger;
+    document.getElementById('modalTitle').textContent = m.title;
+    document.getElementById('modalMatch').textContent = m.match + ' Match';
+    document.getElementById('modalYear').textContent = m.year;
+    document.getElementById('modalAge').textContent = m.age;
+    document.getElementById('modalSeasons').textContent = m.seasons;
+    document.getElementById('modalDesc').textContent = m.desc;
+    document.getElementById('modalCast').textContent = m.cast;
+    document.getElementById('modalGenre').textContent = m.genre;
+    document.getElementById('modalBg').style.background = m.bg;
+    document.getElementById('movieModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal(e) {
+    if (!e || e.target === document.getElementById('movieModal')) {
+      document.getElementById('movieModal').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+</script>
+
+</body>
+</html>
